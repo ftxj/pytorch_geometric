@@ -9,7 +9,7 @@ from torch_geometric.utils import coalesce, degree, remove_self_loops
 
 from .num_nodes import maybe_num_nodes
 
-
+@torch.jit.ignore
 def negative_sampling(edge_index: Tensor,
                       num_nodes: Optional[Union[int, Tuple[int, int]]] = None,
                       num_neg_samples: Optional[int] = None,
@@ -107,7 +107,7 @@ def negative_sampling(edge_index: Tensor,
 
     return vector_to_edge_index(neg_idx, size, bipartite, force_undirected)
 
-
+@torch.jit.ignore
 def batched_negative_sampling(
     edge_index: Tensor,
     batch: Union[Tensor, Tuple[Tensor, Tensor]],
@@ -200,7 +200,7 @@ def batched_negative_sampling(
 
     return torch.cat(neg_edge_indices, dim=1)
 
-
+@torch.jit.ignore
 def structured_negative_sampling(edge_index, num_nodes: Optional[int] = None,
                                  contains_neg_self_loops: bool = True):
     r"""Samples a negative edge :obj:`(i,k)` for every positive edge
@@ -248,7 +248,7 @@ def structured_negative_sampling(edge_index, num_nodes: Optional[int] = None,
 
     return edge_index[0], edge_index[1], rand.to(edge_index.device)
 
-
+@torch.jit.ignore
 def structured_negative_sampling_feasible(
         edge_index: Tensor, num_nodes: Optional[int] = None,
         contains_neg_self_loops: bool = True) -> bool:
@@ -294,14 +294,14 @@ def structured_negative_sampling_feasible(
 
 ###############################################################################
 
-
+@torch.jit.ignore
 def sample(population: int, k: int, device=None) -> Tensor:
     if population <= k:
         return torch.arange(population, device=device)
     else:
         return torch.tensor(random.sample(range(population), k), device=device)
 
-
+@torch.jit.ignore
 def edge_index_to_vector(
     edge_index: Tensor,
     size: Tuple[int, int],
@@ -341,7 +341,7 @@ def edge_index_to_vector(
         population = num_nodes * num_nodes - num_nodes
         return idx, population
 
-
+@torch.jit.ignore
 def vector_to_edge_index(idx: Tensor, size: Tuple[int, int], bipartite: bool,
                          force_undirected: bool = False) -> Tensor:
 
