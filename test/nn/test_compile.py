@@ -1,5 +1,5 @@
 import warnings
-
+from typing import List
 import torch
 
 from torch_geometric.profile import benchmark
@@ -8,32 +8,72 @@ from torch_geometric.utils import scatter
 
 
 # Basic "Gather-Apply-Scatter" patterns commonly used in PyG:
-def gather_scatter(x, edge_index, reduce='sum'):
-    row, col = edge_index
+def gather_scatter(x, edge_index, reduce: str ='sum'):
+    row = edge_index[0]
+    col = edge_index[1]
     x_j = x[row]
     return scatter(x_j, col, dim_size=x.size(0), reduce=reduce)
 
+@torch.jit.script
+def gather_scatter2(x, edge_index, reduce: str ='sum'):
+    row = edge_index[0]
+    col = edge_index[1]
+    x_j = x[row]
+    return scatter(x_j, col, dim_size=x.size(0), reduce=reduce)
 
-def gather_cat_scatter(x, edge_index, reduce='sum'):
-    row, col = edge_index
+def gather_cat_scatter(x, edge_index, reduce: str ='sum'):
+    row = edge_index[0]
+    col = edge_index[1]
     x_ij = torch.cat([x[col], x[row]], dim=-1)
     return scatter(x_ij, col, dim_size=x.size(0), reduce=reduce)
 
 
-def gather_weight_scatter(x, edge_index, edge_weight, reduce='sum'):
-    row, col = edge_index
+def gather_weight_scatter(x, edge_index, edge_weight, reduce: str ='sum'):
+    row = edge_index[0]
+    col = edge_index[1]
     x_j = x[row] * edge_weight.view(-1, 1)
     return scatter(x_j, col, dim_size=x.size(0), reduce=reduce)
 
 
-def gather_transform_scatter(x, edge_index, matrix, reduce='sum'):
-    row, col = edge_index
+def gather_transform_scatter(x, edge_index, matrix, reduce: str ='sum'):
+    row = edge_index[0]
+    col = edge_index[1]
     x_j = x[row] @ matrix
     return scatter(x_j, col, dim_size=x.size(0), reduce=reduce)
 
 
-def fused_gather_scatter(x, edge_index, reduce=['sum', 'mean', 'max']):
-    row, col = edge_index
+def fused_gather_scatter(x, edge_index, reduce: List[str] = ['sum', 'mean', 'max']):
+    row = edge_index[0]
+    col = edge_index[1]
+    x_j = x[row]
+    outs = [scatter(x_j, col, dim_size=x.size(0), reduce=r) for r in reduce]
+    return torch.cat(outs, dim=-1)
+
+@torch.jit.script
+def gather_cat_scatter2(x, edge_index, reduce: str ='sum'):
+    row = edge_index[0]
+    col = edge_index[1]
+    x_ij = torch.cat([x[col], x[row]], dim=-1)
+    return scatter(x_ij, col, dim_size=x.size(0), reduce=reduce)
+
+@torch.jit.script
+def gather_weight_scatter2(x, edge_index, edge_weight, reduce: str ='sum'):
+    row = edge_index[0]
+    col = edge_index[1]
+    x_j = x[row] * edge_weight.view(-1, 1)
+    return scatter(x_j, col, dim_size=x.size(0), reduce=reduce)
+
+@torch.jit.script
+def gather_transform_scatter2(x, edge_index, matrix, reduce: str ='sum'):
+    row = edge_index[0]
+    col = edge_index[1]
+    x_j = x[row] @ matrix
+    return scatter(x_j, col, dim_size=x.size(0), reduce=reduce)
+
+@torch.jit.script
+def fused_gather_scatter2(x, edge_index, reduce: List[str] =['sum', 'mean', 'max']):
+    row = edge_index[0]
+    col = edge_index[1]
     x_j = x[row]
     outs = [scatter(x_j, col, dim_size=x.size(0), reduce=r) for r in reduce]
     return torch.cat(outs, dim=-1)
@@ -111,6 +151,7 @@ if __name__ == '__main__':
             funcs=[
                 gather_scatter,
                 torch.compile(gather_scatter),
+                gather_scatter2,
             ],
             func_names=['Vanilla', 'Compiled'],
             args=(x, edge_index, reduce),
@@ -123,6 +164,7 @@ if __name__ == '__main__':
             funcs=[
                 gather_cat_scatter,
                 torch.compile(gather_cat_scatter),
+                gather_cat_scatter2,
             ],
             func_names=['Vanilla Cat', 'Compiled Cat'],
             args=(x, edge_index, reduce),
@@ -135,6 +177,7 @@ if __name__ == '__main__':
             funcs=[
                 gather_weight_scatter,
                 torch.compile(gather_weight_scatter),
+                gather_weight_scatter2,
             ],
             func_names=['Vanilla Weight', 'Compiled Weight'],
             args=(x, edge_index, edge_weight, reduce),
@@ -147,6 +190,7 @@ if __name__ == '__main__':
             funcs=[
                 gather_transform_scatter,
                 torch.compile(gather_transform_scatter),
+                gather_transform_scatter2,
             ],
             func_names=['Vanilla Transform', 'Compiled Transform'],
             args=(x, edge_index, matrix, reduce),
@@ -159,6 +203,7 @@ if __name__ == '__main__':
         funcs=[
             fused_gather_scatter,
             torch.compile(fused_gather_scatter),
+            fused_gather_scatter2,
         ],
         func_names=['Vanilla Fused', 'Compiled Fused'],
         args=(x, edge_index),
