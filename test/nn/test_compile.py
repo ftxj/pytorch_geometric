@@ -71,7 +71,8 @@ def gather_transform_scatter2(x, edge_index, matrix, reduce: str ='sum'):
     return scatter(x_j, col, dim_size=x.size(0), reduce=reduce)
 
 @torch.jit.script
-def fused_gather_scatter2(x, edge_index, reduce: List[str] =['sum', 'mean', 'max']):
+def fused_gather_scatter2(x, edge_index):
+    reduce = ['sum', 'mean', 'max'] 
     row = edge_index[0]
     col = edge_index[1]
     x_j = x[row]
@@ -153,7 +154,7 @@ if __name__ == '__main__':
                 torch.compile(gather_scatter),
                 gather_scatter2,
             ],
-            func_names=['Vanilla', 'Compiled'],
+            func_names=['Vanilla', 'Compiled', 'Nvfuser'],
             args=(x, edge_index, reduce),
             num_steps=50 if args.device == 'cpu' else 500,
             num_warmups=10 if args.device == 'cpu' else 100,
@@ -166,7 +167,7 @@ if __name__ == '__main__':
                 torch.compile(gather_cat_scatter),
                 gather_cat_scatter2,
             ],
-            func_names=['Vanilla Cat', 'Compiled Cat'],
+            func_names=['Vanilla Cat', 'Compiled Cat', 'Nvfuser'],
             args=(x, edge_index, reduce),
             num_steps=50 if args.device == 'cpu' else 500,
             num_warmups=10 if args.device == 'cpu' else 100,
@@ -179,7 +180,7 @@ if __name__ == '__main__':
                 torch.compile(gather_weight_scatter),
                 gather_weight_scatter2,
             ],
-            func_names=['Vanilla Weight', 'Compiled Weight'],
+            func_names=['Vanilla Weight', 'Compiled Weight','Nvfuser'],
             args=(x, edge_index, edge_weight, reduce),
             num_steps=50 if args.device == 'cpu' else 500,
             num_warmups=10 if args.device == 'cpu' else 100,
@@ -192,7 +193,7 @@ if __name__ == '__main__':
                 torch.compile(gather_transform_scatter),
                 gather_transform_scatter2,
             ],
-            func_names=['Vanilla Transform', 'Compiled Transform'],
+            func_names=['Vanilla Transform', 'Compiled Transform','Nvfuser'],
             args=(x, edge_index, matrix, reduce),
             num_steps=50 if args.device == 'cpu' else 500,
             num_warmups=10 if args.device == 'cpu' else 100,
@@ -205,9 +206,10 @@ if __name__ == '__main__':
             torch.compile(fused_gather_scatter),
             fused_gather_scatter2,
         ],
-        func_names=['Vanilla Fused', 'Compiled Fused'],
+        func_names=['Vanilla Fused', 'Compiled Fused', 'Nvfuser'],
         args=(x, edge_index),
         num_steps=50 if args.device == 'cpu' else 500,
         num_warmups=10 if args.device == 'cpu' else 100,
         backward=args.backward,
     )
+
