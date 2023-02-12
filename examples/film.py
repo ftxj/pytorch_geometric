@@ -25,20 +25,20 @@ class Net(torch.nn.Module):
         self.dropout = dropout
 
         self.convs = torch.nn.ModuleList()
-        self.convs.append(FiLMConv(in_channels, hidden_channels))
+        self.convs.append(FiLMConv(in_channels, hidden_channels).jittable())
         for _ in range(num_layers - 2):
-            self.convs.append(FiLMConv(hidden_channels, hidden_channels))
-        self.convs.append(FiLMConv(hidden_channels, out_channels, act=None))
+            self.convs.append(FiLMConv(hidden_channels, hidden_channels).jittable())
+        self.last_conv = FiLMConv(hidden_channels, out_channels, act=None).jittable()
 
         self.norms = torch.nn.ModuleList()
         for _ in range(num_layers - 1):
             self.norms.append(BatchNorm1d(hidden_channels))
 
     def forward(self, x, edge_index):
-        for conv, norm in zip(self.convs[:-1], self.norms):
+        for conv, norm in zip(self.convs, self.norms):
             x = norm(conv(x, edge_index))
             x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.convs[-1](x, edge_index)
+        x = self.last_conv(x, edge_index)
         return x
 
 
@@ -46,6 +46,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = Net(in_channels=train_dataset.num_features, hidden_channels=320,
             out_channels=train_dataset.num_classes, num_layers=4,
             dropout=0.1).to(device)
+model = torch.jit.script(model)
 criterion = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 

@@ -1,0 +1,143 @@
+diff --git a/examples/gcn.py b/examples/gcn.py
+index ac68e824..023e7f87 100644
+--- a/examples/gcn.py
++++ b/examples/gcn.py
+@@ -90,4 +90,4 @@ for epoch in range(1, args.epochs + 1):
+     if val_acc > best_val_acc:
+         best_val_acc = val_acc
+         test_acc = tmp_test_acc
+-    log(Epoch=epoch, Loss=loss, Train=train_acc, Val=val_acc, Test=test_acc)
++    # log(Epoch=epoch, Loss=loss, Train=train_acc, Val=val_acc, Test=test_acc)
+diff --git a/examples/gcn2_cora.py b/examples/gcn2_cora.py
+index 11f84a3f..edd4f690 100644
+--- a/examples/gcn2_cora.py
++++ b/examples/gcn2_cora.py
+@@ -85,6 +85,6 @@ for epoch in range(1, 1001):
+     if val_acc > best_val_acc:
+         best_val_acc = val_acc
+         test_acc = tmp_test_acc
+-    print(f'Epoch: {epoch:04d}, Loss: {loss:.4f} Train: {train_acc:.4f}, '
+-          f'Val: {val_acc:.4f}, Test: {tmp_test_acc:.4f}, '
+-          f'Final Test: {test_acc:.4f}')
++    # print(f'Epoch: {epoch:04d}, Loss: {loss:.4f} Train: {train_acc:.4f}, '
++    #       f'Val: {val_acc:.4f}, Test: {tmp_test_acc:.4f}, '
++    #       f'Final Test: {test_acc:.4f}')
+diff --git a/examples/qm9_pretrained_schnet.py b/examples/qm9_pretrained_schnet.py
+index da91f1db..61d6c31b 100644
+--- a/examples/qm9_pretrained_schnet.py
++++ b/examples/qm9_pretrained_schnet.py
+@@ -14,7 +14,7 @@ parser.add_argument('--cutoff', type=float, default=10.0,
+ args = parser.parse_args()
+ 
+ path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'data', 'QM9')
+-dataset = QM9(osp.join())
++dataset = QM9(path)
+ 
+ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+ 
+diff --git a/test/nn/test_compile.py b/test/nn/test_compile.py
+index f0af9c06..879e1cea 100644
+--- a/test/nn/test_compile.py
++++ b/test/nn/test_compile.py
+@@ -104,7 +104,7 @@ if __name__ == '__main__':
+     edge_weight = torch.rand(num_edges, device=args.device)
+     matrix = torch.randn(64, 64, device=args.device)
+ 
+-    for reduce in ['sum', 'mean', 'max']:
++    for reduce in ['sum']:
+         print(f'Aggregator: {reduce}')
+ 
+         benchmark(
+diff --git a/torch_geometric/nn/conv/gcn_conv.py b/torch_geometric/nn/conv/gcn_conv.py
+index 2b9d1588..b9cadeeb 100644
+--- a/torch_geometric/nn/conv/gcn_conv.py
++++ b/torch_geometric/nn/conv/gcn_conv.py
+@@ -87,6 +87,15 @@ def gcn_norm(edge_index, edge_weight=None, num_nodes=None, improved=False,
+     deg = scatter(edge_weight, idx, dim=0, dim_size=num_nodes, reduce='sum')
+     deg_inv_sqrt = deg.pow_(-0.5)
+     deg_inv_sqrt.masked_fill_(deg_inv_sqrt == float('inf'), 0)
++    print("row = ,", row.size())
++    print("col = ,", col.size())
++    print("row max = ,", row.max())
++    print("col max = ,", col.max())
++    
++    print("edge_weight = ,", edge_weight.size())
++    print("deg_inv_sqrt = ,", deg_inv_sqrt.size())
++
++    
+     edge_weight = deg_inv_sqrt[row] * edge_weight * deg_inv_sqrt[col]
+ 
+     if is_sparse_tensor:
+diff --git a/torch_geometric/nn/conv/pna_conv.py b/torch_geometric/nn/conv/pna_conv.py
+index 942b54d1..74acd29f 100644
+--- a/torch_geometric/nn/conv/pna_conv.py
++++ b/torch_geometric/nn/conv/pna_conv.py
+@@ -167,7 +167,10 @@ class PNAConv(MessagePassing):
+         out = self.propagate(edge_index, x=x, edge_attr=edge_attr, size=None)
+ 
+         out = torch.cat([x, out], dim=-1)
+-        outs = [nn(out[:, i]) for i, nn in enumerate(self.post_nns)]
++        # torch.index_select(out, 1, torch.IntTensor([i]).to('cuda')).reshape(x.size(0))
++        outs = [nn(torch.index_select(out, 1, torch.IntTensor([i]).to('cuda')).reshape(out.size(0), out.size(2))) for i, nn in enumerate(self.post_nns)]
++        
++        # outs = [nn(out[:, i]) for i, nn in enumerate(self.post_nns)]
+         out = torch.cat(outs, dim=1)
+ 
+         return self.lin(out)
+diff --git a/torch_geometric/nn/conv/rgcn_conv.py b/torch_geometric/nn/conv/rgcn_conv.py
+index 6b441523..b2243f37 100644
+--- a/torch_geometric/nn/conv/rgcn_conv.py
++++ b/torch_geometric/nn/conv/rgcn_conv.py
+@@ -352,7 +352,20 @@ class FastRGCNConv(RGCNConv):
+         # Compute normalization in separation for each `edge_type`.
+         if self.aggr == 'mean':
+             norm = F.one_hot(edge_type, self.num_relations).to(torch.float)
+-            norm = scatter(norm, index, dim=0, dim_size=dim_size)[index]
++
++            tmp = scatter(norm, index, dim=0, dim_size=dim_size)
++
++            print("Gather Pattern")
++            print("tmp = ", tmp.size())
++            print("index = ", index.size())
++            print(index)
++            print("index max = ", index.max())
++            print("edge_type = ", edge_type.size())
++            print("edge_type max = ", edge_type.max())
++            print("inputs = ", inputs.size())
++
++            norm = tmp[index]
++            
+             norm = torch.gather(norm, 1, edge_type.view(-1, 1))
+             norm = 1. / norm.clamp_(1.)
+             inputs = norm * inputs
+diff --git a/torch_geometric/utils/to_dense_batch.py b/torch_geometric/utils/to_dense_batch.py
+index a13bc06d..dbf2112d 100644
+--- a/torch_geometric/utils/to_dense_batch.py
++++ b/torch_geometric/utils/to_dense_batch.py
+@@ -104,7 +104,14 @@ def to_dense_batch(x: Tensor, batch: Optional[Tensor] = None,
+         max_num_nodes = int(num_nodes.max())
+     elif num_nodes.max() > max_num_nodes:
+         filter_nodes = True
+-
++    print("batch = ", batch.size())
++    print("batch max = ", batch.max())
++    
++    print("cum_nodes = ", cum_nodes.size())
++    print("cum_nodes max = ", cum_nodes.max())
++    
++    print("max_num_nodes = ", max_num_nodes)
++    
+     tmp = torch.arange(batch.size(0), device=x.device) - cum_nodes[batch]
+     idx = tmp + (batch * max_num_nodes)
+     if filter_nodes:
+@@ -113,6 +120,10 @@ def to_dense_batch(x: Tensor, batch: Optional[Tensor] = None,
+ 
+     size = [batch_size * max_num_nodes] + list(x.size())[1:]
+     out = x.new_full(size, fill_value)
++    print("out = ", out.size())
++    print("x = ", x.size())
++    print("-----------")
++    
+     out[idx] = x
+     out = out.view([batch_size, max_num_nodes] + list(x.size())[1:])
+ 
