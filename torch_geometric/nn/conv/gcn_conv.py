@@ -88,7 +88,6 @@ def gcn_norm(edge_index, edge_weight=None, num_nodes=None, improved=False,
             edge_index, edge_weight, fill_value, num_nodes)
         assert tmp_edge_weight is not None
         edge_weight = tmp_edge_weight
-
     row, col = edge_index[0], edge_index[1]
     idx = col if flow == "source_to_target" else row
     deg = scatter(edge_weight, idx, dim=0, dim_size=num_nodes, reduce='sum')
@@ -200,7 +199,6 @@ class GCNConv(MessagePassing):
     def forward(self, x: Tensor, edge_index: Adj,
                 edge_weight: OptTensor = None) -> Tensor:
         """"""
-
         if self.normalize:
             if isinstance(edge_index, Tensor):
                 cache = self._cached_edge_index

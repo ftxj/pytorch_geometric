@@ -32,9 +32,9 @@ class Net(torch.nn.Module):
     def __init__(self, in_channels):
         super().__init__()
 
-        self.conv1 = GINConv(Seq(Lin(in_channels, 64), ReLU(), Lin(64, 64)))
+        self.conv1 = GINConv(Seq(Lin(in_channels, 64), ReLU(), Lin(64, 64))).jittable()
         self.pool1 = TopKPooling(in_channels, min_score=0.05)
-        self.conv2 = GINConv(Seq(Lin(64, 64), ReLU(), Lin(64, 64)))
+        self.conv2 = GINConv(Seq(Lin(64, 64), ReLU(), Lin(64, 64))).jittable()
 
         self.lin = torch.nn.Linear(64, 1)
 
@@ -60,6 +60,7 @@ class Net(torch.nn.Module):
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = Net(dataset.num_features).to(device)
+model = torch.jit.script(model)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 # Initialize to optimal attention weights:

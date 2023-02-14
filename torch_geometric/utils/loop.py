@@ -184,7 +184,6 @@ def add_self_loops(
         tensor([0.5000, 0.5000, 0.5000, 1.0000, 0.5000]))
     """
     N = maybe_num_nodes(edge_index, num_nodes)
-
     loop_index = torch.arange(0, N, dtype=torch.long, device=edge_index.device)
     loop_index = loop_index.unsqueeze(0).repeat(2, 1)
 
@@ -209,7 +208,6 @@ def add_self_loops(
             raise AttributeError("No valid 'fill_value' provided")
 
         edge_attr = torch.cat([edge_attr, loop_attr], dim=0)
-
     edge_index = torch.cat([edge_index, loop_index], dim=1)
     return edge_index, edge_attr
 

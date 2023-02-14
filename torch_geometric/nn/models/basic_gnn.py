@@ -82,6 +82,9 @@ class BasicGNN(torch.nn.Module):
         self.hidden_channels = hidden_channels
         self.num_layers = num_layers
 
+        self.supports_edge_weight = False
+        self.supports_edge_attr = False
+
         self.dropout = dropout
         self.act = activation_resolver(act, **(act_kwargs or {}))
         self.jk_mode = jk
@@ -109,13 +112,19 @@ class BasicGNN(torch.nn.Module):
                 in_channels = (hidden_channels, hidden_channels)
             else:
                 in_channels = hidden_channels
+        # if out_channels is not None and jk is None:
+        #     self._is_conv_to_out = True
+        #     self.convs.append(
+        #         self.init_conv(in_channels, out_channels, **kwargs))
+        # else:
+        #     self.convs.append(
+        #         self.init_conv(in_channels, hidden_channels, **kwargs))
+
         if out_channels is not None and jk is None:
             self._is_conv_to_out = True
-            self.convs.append(
-                self.init_conv(in_channels, out_channels, **kwargs))
+            self.last_conv = self.init_conv(in_channels, out_channels, **kwargs)
         else:
-            self.convs.append(
-                self.init_conv(in_channels, hidden_channels, **kwargs))
+            self.last_conv = self.init_conv(in_channels, hidden_channels, **kwargs)
 
         self.norms = None
         if norm is not None:
@@ -147,6 +156,7 @@ class BasicGNN(torch.nn.Module):
     def reset_parameters(self):
         for conv in self.convs:
             conv.reset_parameters()
+        self.last_conv.reset_parameters()
         for norm in self.norms or []:
             norm.reset_parameters()
         if hasattr(self, 'jk'):
@@ -157,37 +167,71 @@ class BasicGNN(torch.nn.Module):
     def forward(
         self,
         x: Tensor,
-        edge_index: Adj,
-        *,
+        edge_index: Tensor,
+        # *,
         edge_weight: OptTensor = None,
         edge_attr: OptTensor = None,
     ) -> Tensor:
         """"""
         xs: List[Tensor] = []
-        for i in range(self.num_layers):
-            # Tracing the module is not allowed with *args and **kwargs :(
-            # As such, we rely on a static solution to pass optional edge
-            # weights and edge attributes to the module.
+        # assert edge_weight == None
+        for conv in self.convs:
             if self.supports_edge_weight and self.supports_edge_attr:
-                x = self.convs[i](x, edge_index, edge_weight=edge_weight,
-                                  edge_attr=edge_attr)
+                print("bug 1, report to Jie Xin")
+                # x = conv(x, edge_index, edge_weight, edge_attr)
             elif self.supports_edge_weight:
-                x = self.convs[i](x, edge_index, edge_weight=edge_weight)
+                # print("bug 2, report to Jie Xin")
+                x = conv(x, edge_index, edge_weight)
             elif self.supports_edge_attr:
-                x = self.convs[i](x, edge_index, edge_attr=edge_attr)
+                print("bug 3, report to Jie Xin")
+                # x = conv(x, edge_index, None, edge_attr)
             else:
-                x = self.convs[i](x, edge_index)
-            if i == self.num_layers - 1 and self.jk_mode is None:
-                break
+                x = conv(x, edge_index)
+            # if i == self.num_layers - 1 and self.jk_mode is None:
+            # break
             if self.act is not None and self.act_first:
                 x = self.act(x)
-            if self.norms is not None:
-                x = self.norms[i](x)
+            # if self.norms is not None:
+            #     x = norm(x)
             if self.act is not None and not self.act_first:
                 x = self.act(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
             if hasattr(self, 'jk'):
                 xs.append(x)
+        # for i in range(self.num_layers - 1):
+        #     # Tracing the module is not allowed with *args and **kwargs :(
+        #     # As such, we rely on a static solution to pass optional edge
+        #     # weights and edge attributes to the module.
+        #     if self.supports_edge_weight and self.supports_edge_attr:
+        #         x = self.convs[i](x, edge_index, edge_weight=edge_weight,
+        #                           edge_attr=edge_attr)
+        #     elif self.supports_edge_weight:
+        #         x = self.convs[i](x, edge_index, edge_weight=edge_weight)
+        #     elif self.supports_edge_attr:
+        #         x = self.convs[i](x, edge_index, edge_attr=edge_attr)
+        #     else:
+        #         x = self.convs[i](x, edge_index)
+        #     # if i == self.num_layers - 1 and self.jk_mode is None:
+        #     #     break
+        #     if self.act is not None and self.act_first:
+        #         x = self.act(x)
+        #     if self.norms is not None:
+        #         x = self.norms[i](x)
+        #     if self.act is not None and not self.act_first:
+        #         x = self.act(x)
+        #     x = F.dropout(x, p=self.dropout, training=self.training)
+        #     if hasattr(self, 'jk'):
+        #         xs.append(x)
+        if self.supports_edge_weight and self.supports_edge_attr:
+            print("bug 1, report to Jie Xin")
+            # x = self.last_conv(x, edge_index, edge_weight, edge_attr)
+        elif self.supports_edge_weight:
+            x = self.last_conv(x, edge_index, edge_weight)
+        elif self.supports_edge_attr:
+            print("bug 3, report to Jie Xin")
+            # x = self.last_conv(x, edge_index, edge_attr=edge_attr)
+        else:
+            x = self.last_conv(x, edge_index)
 
         x = self.jk(xs) if hasattr(self, 'jk') else x
         x = self.lin(x) if hasattr(self, 'lin') else x
@@ -290,12 +334,15 @@ class GCN(BasicGNN):
         **kwargs (optional): Additional arguments of
             :class:`torch_geometric.nn.conv.GCNConv`.
     """
-    supports_edge_weight = True
-    supports_edge_attr = False
+    # supports_edge_weight = True
+    # supports_edge_attr = False
 
     def init_conv(self, in_channels: int, out_channels: int,
                   **kwargs) -> MessagePassing:
-        return GCNConv(in_channels, out_channels, **kwargs)
+        self.supports_edge_weight = True
+        self.supports_edge_attr = False
+
+        return GCNConv(in_channels, out_channels, **kwargs).jittable()
 
 
 class GraphSAGE(BasicGNN):
