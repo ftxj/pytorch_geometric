@@ -238,6 +238,7 @@ class MessagePassing(torch.nn.Module):
         elif isinstance(edge_index, Tensor):
             try:
                 index = edge_index[dim]
+                # print("lift = ", index)
                 return src.index_select(self.node_dim, index)
             except (IndexError, RuntimeError) as e:
                 if index.min() < 0 or index.max() >= src.size(self.node_dim):
@@ -521,6 +522,8 @@ class MessagePassing(torch.nn.Module):
         respective nodes :math:`i` and :math:`j` by appending :obj:`_i` or
         :obj:`_j` to the variable name, *.e.g.* :obj:`x_i` and :obj:`x_j`.
         """
+        # print("message size = ")
+        # print("x_j = ", x_j.size())
         return x_j
 
     @property
@@ -579,6 +582,11 @@ class MessagePassing(torch.nn.Module):
         :class:`~torch_geometric.nn.aggr.Aggregation` module to reduce messages
         as specified in :meth:`__init__` by the :obj:`aggr` argument.
         """
+        # print("aggregate size = ")
+        # print("inputs = ", inputs.size())
+        # print("index = ", index.size())
+        # print("aggregate = ", index)
+
         return self.aggr_module(inputs, index, ptr=ptr, dim_size=dim_size,
                                 dim=self.node_dim)
 

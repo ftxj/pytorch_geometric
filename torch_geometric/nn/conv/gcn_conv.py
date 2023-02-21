@@ -201,6 +201,8 @@ class GCNConv(MessagePassing):
     def forward(self, x: Tensor, edge_index: Adj,
                 edge_weight: OptTensor = None) -> Tensor:
         """"""
+        # print("forward x = ", x.size())
+        # print("forward idx = ", edge_index.size())
 
         if self.normalize:
             if isinstance(edge_index, Tensor):
@@ -237,6 +239,8 @@ class GCNConv(MessagePassing):
         return out
 
     def message(self, x_j: Tensor, edge_weight: OptTensor) -> Tensor:
+        # print("message size = ")
+        # print("x_j = ", x_j.size())
         return x_j if edge_weight is None else edge_weight.view(-1, 1) * x_j
 
     def message_and_aggregate(self, adj_t: SparseTensor, x: Tensor) -> Tensor:

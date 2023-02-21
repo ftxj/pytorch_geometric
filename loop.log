@@ -1,0 +1,83 @@
+[DUMP graph_fuser.cpp:2460] Before Fusion:
+[DUMP graph_fuser.cpp:2460] graph(%self : __torch__.testloop,
+[DUMP graph_fuser.cpp:2460]       %x.1 : Tensor,
+[DUMP graph_fuser.cpp:2460]       %num_nodes.1 : int?):
+[DUMP graph_fuser.cpp:2460]   %7 : int = prim::Constant[value=4]() # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:188:42
+[DUMP graph_fuser.cpp:2460]   %6 : int = prim::Constant[value=0]() # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:188:30
+[DUMP graph_fuser.cpp:2460]   %5 : int = prim::Constant[value=1]() # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:189:51
+[DUMP graph_fuser.cpp:2460]   %4 : NoneType = prim::Constant()
+[DUMP graph_fuser.cpp:2460]   %3 : int[] = prim::Constant[value=[2, 1]]()
+[DUMP graph_fuser.cpp:2460]   %8 : bool = aten::__isnot__(%num_nodes.1, %4) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:23:7
+[DUMP graph_fuser.cpp:2460]   %N.1 : int = prim::If(%8) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:23:4
+[DUMP graph_fuser.cpp:2460]     block0():
+[DUMP graph_fuser.cpp:2460]       %num_nodes.7 : int = prim::unchecked_cast(%num_nodes.1)
+[DUMP graph_fuser.cpp:2460]       -> (%num_nodes.7)
+[DUMP graph_fuser.cpp:2460]     block1():
+[DUMP graph_fuser.cpp:2460]       %11 : int = aten::numel(%x.1) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:44
+[DUMP graph_fuser.cpp:2460]       %12 : bool = aten::gt(%11, %6) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:44
+[DUMP graph_fuser.cpp:2460]       %13 : int = prim::If(%12) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:15
+[DUMP graph_fuser.cpp:2460]         block0():
+[DUMP graph_fuser.cpp:2460]           %14 : Tensor = prim::profile[profiled_type=Tensor, seen_none=0](%x.1)
+[DUMP graph_fuser.cpp:2460]           %15 : Tensor = aten::max(%14) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:19
+[DUMP graph_fuser.cpp:2460]           %16 : Tensor = prim::profile[profiled_type=Tensor, seen_none=0](%15)
+[DUMP graph_fuser.cpp:2460]           %17 : int = aten::Int(%16) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:15
+[DUMP graph_fuser.cpp:2460]           %18 : int = aten::add(%17, %5) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:15
+[DUMP graph_fuser.cpp:2460]           -> (%18)
+[DUMP graph_fuser.cpp:2460]         block1():
+[DUMP graph_fuser.cpp:2460]           -> (%6)
+[DUMP graph_fuser.cpp:2460]       -> (%13)
+[DUMP graph_fuser.cpp:2460]   %19 : Tensor = prim::profile[profiled_type=Long(2, 3, strides=[3, 1], requires_grad=0, device=cuda:0), seen_none=0](%x.1)
+[DUMP graph_fuser.cpp:2460]   %20 : Device = prim::device(%19)
+[DUMP graph_fuser.cpp:2460]   %loop_index.1 : Tensor = aten::arange(%6, %N.1, %7, %4, %20, %4) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:188:17
+[DUMP graph_fuser.cpp:2460]   %22 : Tensor = prim::profile[profiled_type=Long(2, strides=[1], requires_grad=0, device=cuda:0), seen_none=0](%loop_index.1)
+[DUMP graph_fuser.cpp:2460]   %23 : Tensor = aten::unsqueeze(%22, %6) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:189:17
+[DUMP graph_fuser.cpp:2460]   %24 : Tensor = prim::profile[profiled_type=Long(1, 2, strides=[2, 1], requires_grad=0, device=cuda:0), seen_none=0](%23)
+[DUMP graph_fuser.cpp:2460]   %loop_index.5 : Tensor = aten::repeat(%24, %3) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:189:17
+[DUMP graph_fuser.cpp:2460]   %26 : Tensor = prim::profile[profiled_type=Long(2, 3, strides=[3, 1], requires_grad=0, device=cuda:0), seen_none=0](%x.1)
+[DUMP graph_fuser.cpp:2460]   %27 : Tensor = prim::profile[profiled_type=Long(2, 2, strides=[2, 1], requires_grad=0, device=cuda:0), seen_none=0](%loop_index.5)
+[DUMP graph_fuser.cpp:2460]   %28 : Tensor[] = prim::ListConstruct(%26, %27)
+[DUMP graph_fuser.cpp:2460]   %edge_index.10 : Tensor = aten::cat(%28, %5) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:213:17
+[DUMP graph_fuser.cpp:2460]   %30 : Tensor = prim::profile[profiled_type=Long(2, 5, strides=[5, 1], requires_grad=0, device=cuda:0), seen_none=0](%edge_index.10)
+[DUMP graph_fuser.cpp:2460]   %31 : (Tensor, Tensor?) = prim::TupleConstruct(%30, %4)
+[DUMP graph_fuser.cpp:2460]   return (%31)
+[DUMP graph_fuser.cpp:2544] Before Compilation:
+[DUMP graph_fuser.cpp:2544] graph(%self : __torch__.testloop,
+[DUMP graph_fuser.cpp:2544]       %x.1 : Tensor,
+[DUMP graph_fuser.cpp:2544]       %num_nodes.1 : int?):
+[DUMP graph_fuser.cpp:2544]   %7 : int = prim::Constant[value=4]() # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:188:42
+[DUMP graph_fuser.cpp:2544]   %6 : int = prim::Constant[value=0]() # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:188:30
+[DUMP graph_fuser.cpp:2544]   %5 : int = prim::Constant[value=1]() # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:189:51
+[DUMP graph_fuser.cpp:2544]   %4 : NoneType = prim::Constant()
+[DUMP graph_fuser.cpp:2544]   %3 : int[] = prim::Constant[value=[2, 1]]()
+[DUMP graph_fuser.cpp:2544]   %8 : bool = aten::__isnot__(%num_nodes.1, %4) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:23:7
+[DUMP graph_fuser.cpp:2544]   %N.1 : int = prim::If(%8) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:23:4
+[DUMP graph_fuser.cpp:2544]     block0():
+[DUMP graph_fuser.cpp:2544]       %num_nodes.7 : int = prim::unchecked_cast(%num_nodes.1)
+[DUMP graph_fuser.cpp:2544]       -> (%num_nodes.7)
+[DUMP graph_fuser.cpp:2544]     block1():
+[DUMP graph_fuser.cpp:2544]       %11 : int = aten::numel(%x.1) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:44
+[DUMP graph_fuser.cpp:2544]       %12 : bool = aten::gt(%11, %6) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:44
+[DUMP graph_fuser.cpp:2544]       %13 : int = prim::If(%12) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:15
+[DUMP graph_fuser.cpp:2544]         block0():
+[DUMP graph_fuser.cpp:2544]           %15 : Tensor = aten::max(%x.1) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:19
+[DUMP graph_fuser.cpp:2544]           %17 : int = aten::Int(%15) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:15
+[DUMP graph_fuser.cpp:2544]           %18 : int = aten::add(%17, %5) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/num_nodes.py:26:15
+[DUMP graph_fuser.cpp:2544]           -> (%18)
+[DUMP graph_fuser.cpp:2544]         block1():
+[DUMP graph_fuser.cpp:2544]           -> (%6)
+[DUMP graph_fuser.cpp:2544]       -> (%13)
+[DUMP graph_fuser.cpp:2544]   %20 : Device = prim::device(%x.1)
+[DUMP graph_fuser.cpp:2544]   %loop_index.1 : Tensor = aten::arange(%6, %N.1, %7, %4, %20, %4) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:188:17
+[DUMP graph_fuser.cpp:2544]   %23 : Tensor = aten::unsqueeze(%loop_index.1, %6) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:189:17
+[DUMP graph_fuser.cpp:2544]   %loop_index.5 : Tensor = aten::repeat(%23, %3) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:189:17
+[DUMP graph_fuser.cpp:2544]   %28 : Tensor[] = prim::ListConstruct(%x.1, %loop_index.5)
+[DUMP graph_fuser.cpp:2544]   %edge_index.10 : Tensor = aten::cat(%28, %5) # /opt/conda/lib/python3.8/site-packages/torch_geometric-2.3.0-py3.8.egg/torch_geometric/utils/loop.py:213:17
+[DUMP graph_fuser.cpp:2544]   %31 : (Tensor, Tensor?) = prim::TupleConstruct(%edge_index.10, %4)
+[DUMP graph_fuser.cpp:2544]   return (%31)
+graph(%self : __torch__.testloop,
+      %x.1 : Tensor,
+      %num_nodes.1 : int?):
+  %7 : Function = prim::Constant[name="add_self_loops"]()
+  %5 : NoneType = prim::Constant()
+  %8 : (Tensor, Tensor?) = prim::CallFunction(%7, %x.1, %5, %5, %num_nodes.1) # test/utils/test_loop.py:63:19
+  return (%8)

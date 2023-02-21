@@ -115,6 +115,7 @@ class ARMAConv(MessagePassing):
             edge_index = gcn_norm(  # yapf: disable
                 edge_index, edge_weight, x.size(self.node_dim),
                 add_self_loops=False, flow=self.flow, dtype=x.dtype)
+        print("edge_index size = ", edge_index.size())
 
         x = x.unsqueeze(-3)
         out = x
@@ -135,8 +136,8 @@ class ARMAConv(MessagePassing):
             if self.bias is not None:
                 out = out + self.bias[0 if self.shared_weights else t]
 
-            if self.act is not None:
-                out = self.act(out)
+            # if self.act is not None:
+            out = self.act(out)
 
         return out.mean(dim=-3)
 
