@@ -114,29 +114,44 @@ class ARMAConv(MessagePassing):
             edge_index = gcn_norm(  # yapf: disable
                 edge_index, edge_weight, x.size(self.node_dim),
                 add_self_loops=False, flow=self.flow, dtype=x.dtype)
-        print("edge_index size = ", edge_index.size())
+        # print("edge_index size = ", edge_index.size())
 
         x = x.unsqueeze(-3)
         out = x
-        for t in range(self.num_layers):
-            if t == 0:
-                out = out @ self.init_weight
-            else:
-                out = out @ self.weight[0 if self.shared_weights else t - 1]
+        # for t in range(self.num_layers):
+        # if t == 0:
+        out = out @ self.init_weight
+        # else:
 
-            # propagate_type: (x: Tensor, edge_weight: OptTensor)
-            out = self.propagate(edge_index, x=out, edge_weight=edge_weight,
-                                 size=None)
+        # propagate_type: (x: Tensor, edge_weight: OptTensor)
+        out = self.propagate(edge_index, x=out, edge_weight=edge_weight,
+                             size=None)
 
-            root = F.dropout(x, p=self.dropout, training=self.training)
-            root = root @ self.root_weight[0 if self.shared_weights else t]
-            out = out + root
+        root = F.dropout(x, p=self.dropout, training=self.training)
+        root = root @ self.root_weight[0 if self.shared_weights else 1]
+        out = out + root
 
-            if self.bias is not None:
-                out = out + self.bias[0 if self.shared_weights else t]
+        if self.bias is not None:
+            out = out + self.bias[0 if self.shared_weights else 1]
 
-            # if self.act is not None:
-            out = self.act(out)
+        # if self.act is not None:
+        out = self.act(out)
+
+        out = out @ self.weight[0 if self.shared_weights else 1 - 1]
+
+        # propagate_type: (x: Tensor, edge_weight: OptTensor)
+        out = self.propagate(edge_index, x=out, edge_weight=edge_weight,
+                             size=None)
+
+        root = F.dropout(x, p=self.dropout, training=self.training)
+        root = root @ self.root_weight[0 if self.shared_weights else 1]
+        out = out + root
+
+        if self.bias is not None:
+            out = out + self.bias[0 if self.shared_weights else 1]
+
+        # if self.act is not None:
+        out = self.act(out)
 
         return out.mean(dim=-3)
 
